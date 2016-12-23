@@ -1,24 +1,19 @@
-FROM ubuntu:14.04
+FROM alpine:3.4
 
 MAINTAINER andy@betacode.io
 
-# Install prerequisites to compile the libraries
-RUN apt-get update -qq && \
-    apt-get install -y wget git libtool pkg-config \
-    build-essential autoconf automake libzmq-dev \
-    && rm -rf /var/lib/apt/lists/*
+ENV PACKAGES="build-base wget git libtool pkgconfig autoconf automake"
 
-# Install stable version of libsodium - a crypto library
-RUN cd /tmp && \
-    git clone git://github.com/jedisct1/libsodium.git && \
-    cd libsodium && git checkout stable && \
-    ./autogen.sh && \
-    ./configure && make check && make install && ldconfig
+# Install prerequisites to compile the libraries
+RUN apk --update --upgrade add $PACKAGES && \
+    find / -type f -iname \*.apk-new -delete && \
+    rm -rf /var/cache/apk/*
 
 # Download specific version of zeromq and install
-RUN cd /opt && \
+RUN cd /tmp && \
     wget https://github.com/zeromq/libzmq/releases/download/v${ZEROMQ_VERSION:-4.2.0}/zeromq-${ZEROMQ_VERSION:-4.2.0}.tar.gz && \
     tar -xzf zeromq-${ZEROMQ_VERSION:-4.2.0}.tar.gz && cd zeromq-${ZEROMQ_VERSION:-4.2.0} && \
     ./autogen.sh && ./configure && make && make install
 
-RUN rm /opt/zeromq-${ZEROMQ_VERSION:-4.2.0}* -rf && rm /tmp/* -rf
+# Cleanup
+RUN rm /tmp/zeromq-${ZEROMQ_VERSION:-4.2.0}* -rf && rm /tmp/* -rf
